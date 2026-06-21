@@ -32,36 +32,33 @@ entities via the `button.press` / `select.select_option` services.
 
 1. HACS → ⋮ → **Custom repositories** → add this repo as type **Integration**.
 2. Install **Tesvor X500 Vacuum**, restart Home Assistant.
-3. **Settings → Devices & Services → Add Integration → Tesvor X500**.
-4. Enter a name and the MQTT **topic prefix** (default `tesvor/x500`).
+3. Make sure your **ESPHome device is added** to Home Assistant (Settings →
+   Devices & Services → ESPHome). Its buttons/selects must exist, e.g.
+   `button.robiroboter_smart_cleaning`.
+4. **Settings → Devices & Services → Add Integration → Tesvor X500**.
+5. Enter:
+   - **Name** — display name
+   - **MQTT topic prefix** — default `tesvor/x500`
+   - **ESPHome entity prefix** — the device-name slug used in the ESPHome
+     entity IDs. For a device named *RobiRoboter* this is `robiroboter`.
 
-## Firmware command channel
+## How control works (no firmware change)
 
-The upstream firmware exposes each command as a separate ESPHome button. This
-integration instead publishes raw UART hex frames to `<prefix>/command`. Add a
-small MQTT subscriber to your `x500.yaml` so the ESP writes them to UART:
+The integration forwards each control to the firmware's existing ESPHome
+entities:
 
-```yaml
-mqtt:
-  # ...existing config...
-  on_message:
-    - topic: tesvor/x500/command
-      then:
-        - lambda: |-
-            // payload like "AA 03 02 22 02 26"
-            std::vector<uint8_t> frame;
-            std::string s = x;
-            size_t pos = 0;
-            while (pos < s.size()) {
-              if (s[pos] == ' ') { pos++; continue; }
-              frame.push_back((uint8_t) strtol(s.substr(pos, 2).c_str(), nullptr, 16));
-              pos += 2;
-            }
-            id(uart_bus).write_array(frame);
-```
+| Integration action        | ESPHome entity called                          |
+|---------------------------|------------------------------------------------|
+| `vacuum.start`            | `button.<prefix>_smart_cleaning`               |
+| `vacuum.stop` / `pause`   | `button.<prefix>_stop`                          |
+| `vacuum.return_to_base`   | `button.<prefix>_go_charge`                     |
+| `vacuum.clean_spot`       | `button.<prefix>_spot_cleaning`                 |
+| Spot / Edge / Zigzag / Mop buttons | matching `button.<prefix>_*`           |
+| Mop Intensity / Suction selects | `select.<prefix>_wischintensitat` / `_saugstarke_test_experimentell` |
+| Map Reset button          | clears the integration's stored path (local)   |
 
-(If you prefer not to modify the firmware, change the vacuum/button/select
-entities to publish to the per-command topics your firmware already exposes.)
+If your ESPHome entity IDs differ, re-add the integration with the correct
+**ESPHome entity prefix**.
 
 ## Lovelace map card
 
@@ -82,8 +79,8 @@ show_state: true
 custom_components/tesvor_x500/
 ├── __init__.py          # setup / coordinator wiring
 ├── manifest.json
-├── const.py             # topics, UART command frames
-├── coordinator.py       # MQTT subscribe, state + path points
+├── const.py             # topics, ESPHome entity suffixes
+├── coordinator.py       # MQTT subscribe + ESPHome service calls
 ├── config_flow.py
 ├── entity.py            # shared base entity
 ├── vacuum.py
