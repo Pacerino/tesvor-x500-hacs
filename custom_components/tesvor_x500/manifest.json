@@ -1,0 +1,12 @@
+{
+  "domain": "tesvor_x500",
+  "name": "Tesvor X500 Vacuum",
+  "version": "0.1.0",
+  "documentation": "https://github.com/hannes813/tesvor-x500-pro-esphome-vacuum",
+  "issue_tracker": "https://github.com/hannes813/tesvor-x500-pro-esphome-vacuum/issues",
+  "dependencies": ["mqtt"],
+  "codeowners": [],
+  "requirements": ["Pillow>=10.0.0"],
+  "iot_class": "local_push",
+  "config_flow": true
+}

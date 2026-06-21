@@ -1,0 +1,18 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Tesvor X500",
+        "description": "Map and state are read from the MQTT topics published by the ESPHome firmware. Controls are forwarded to the firmware's existing ESPHome button/select entities, so no firmware change is needed.",
+        "data": {
+          "name": "Name",
+          "topic_prefix": "MQTT topic prefix",
+          "esphome_prefix": "ESPHome entity prefix (device name slug, e.g. robiroboter)"
+        }
+      }
+    },
+    "abort": {
+      "already_configured": "This topic prefix is already configured."
+    }
+  }
+}
