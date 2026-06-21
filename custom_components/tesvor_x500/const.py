@@ -25,13 +25,12 @@ DEFAULT_TOPIC_PREFIX = "tesvor/x500"
 # "RobiRoboter", so its entity IDs are e.g. button.robiroboter_smart_cleaning.
 DEFAULT_ESPHOME_PREFIX = "robiroboter"
 
-# MQTT subtopics (appended to the configured prefix).
-# The firmware hard-publishes the robot state to "<prefix>/state".
+# MQTT subtopics (appended to the configured prefix). The firmware hard-
+# publishes the robot state to "<prefix>/state" and map point batches to
+# "<prefix>/map/points" as {"p": [[seq, x, y, kind], ...]} (real sequence
+# numbers, not limited to a 16-point window).
 TOPIC_STATE = "state"
-# The map path is the ESPHome "map path json" text_sensor. With MQTT discovery
-# disabled, ESPHome publishes it to "<prefix>/text_sensor/<object_id>/state".
-# Each update contains only the last ~16 points plus a running total "n".
-TOPIC_MAP_POINTS = "text_sensor/map_path_json/state"
+TOPIC_MAP_POINTS = "map/points"
 
 # Raw robot states published on <prefix>/state by the firmware.
 STATE_CLEANING = "cleaning"
