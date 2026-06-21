@@ -60,6 +60,8 @@ class TesvorVacuum(TesvorEntity, StateVacuumEntity):
         | VacuumEntityFeature.STATE
         | VacuumEntityFeature.BATTERY
         | VacuumEntityFeature.CLEAN_SPOT
+        | VacuumEntityFeature.TURN_ON
+        | VacuumEntityFeature.TURN_OFF
     )
 
     def __init__(self, coordinator: TesvorCoordinator) -> None:
@@ -78,6 +80,14 @@ class TesvorVacuum(TesvorEntity, StateVacuumEntity):
 
     async def async_start(self) -> None:
         await self.coordinator.async_press_button(BTN_SMART)
+
+    async def async_turn_on(self, **kwargs) -> None:
+        # No real "on" command; start a smart clean.
+        await self.coordinator.async_press_button(BTN_SMART)
+
+    async def async_turn_off(self, **kwargs) -> None:
+        # No real "off" command; send the robot back to the dock.
+        await self.coordinator.async_press_button(BTN_GO_CHARGE)
 
     async def async_stop(self, **kwargs) -> None:
         await self.coordinator.async_press_button(BTN_STOP)

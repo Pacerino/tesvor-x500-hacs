@@ -139,18 +139,47 @@ class TesvorCoordinator:
 
     @callback
     def _handle_points(self, msg) -> None:
+        payload = msg.payload
+        if isinstance(payload, bytes):
+            payload = payload.decode("utf-8", errors="replace")
+
+        _LOGGER.debug("map points payload on %s: %s", msg.topic, payload)
+
         try:
-            data = json.loads(msg.payload)
+            data = json.loads(payload)
         except (ValueError, TypeError):
-            _LOGGER.warning("Invalid map points payload: %s", msg.payload)
+            _LOGGER.warning("Invalid map points payload: %s", payload)
             return
 
+        if not isinstance(data, dict):
+            return
+        raw_points = data.get("p", [])
+
+        # The firmware text_sensor sends only the last ~16 points plus a running
+        # total "n". Reconstruct each point's absolute index so overlapping
+        # batches dedupe correctly. The last point in the batch has index n-1,
+        # so the first has index n - len(batch).
+        total = data.get("n")
+        if isinstance(total, int) and total >= len(raw_points):
+            base_index = total - len(raw_points)
+        else:
+            # No usable "n": fall back to appending after our highest index.
+            base_index = (max(self._points_by_seq) + 1) if self._points_by_seq else 0
+
         added = 0
-        for p in data.get("p", []):
-            if not isinstance(p, list) or len(p) != 4:
+        for offset, p in enumerate(raw_points):
+            if not isinstance(p, list):
                 continue
             try:
-                seq, x, y, kind = int(p[0]), int(p[1]), int(p[2]), int(p[3])
+                if len(p) == 4:
+                    # [seq, x, y, kind] (raw map/points format)
+                    seq, x, y, kind = int(p[0]), int(p[1]), int(p[2]), int(p[3])
+                elif len(p) == 3:
+                    # [x, y, kind] — index derived from the running total.
+                    seq = base_index + offset
+                    x, y, kind = int(p[0]), int(p[1]), int(p[2])
+                else:
+                    continue
             except (ValueError, TypeError):
                 continue
             if seq not in self._points_by_seq:
@@ -162,6 +191,9 @@ class TesvorCoordinator:
             for old in sorted(self._points_by_seq)[: len(self._points_by_seq) - MAX_POINTS]:
                 del self._points_by_seq[old]
 
+        _LOGGER.debug(
+            "Parsed %d new points (total=%d)", added, len(self._points_by_seq)
+        )
         if added:
             self._notify()
 
